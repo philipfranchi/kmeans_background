@@ -5,6 +5,10 @@ const isdebug = 0;
 const KGROUPS = 16;
 const MAX_ITR = 40;
 const MAX_INT = 999;
+const POLL_W = 640;
+const POLL_H = 480;
+const NUM_PIXELS =POLL_W*POLL_H; 
+
 var canvas;
 var colors;
 //Image user preloaded, used to determine the size of the canvas
@@ -25,7 +29,7 @@ function preload(){
 function createColorHash(img){
     var ret = {};
     img.loadPixels();    
-    for(var p = 0; p < img.width*img.height; p++){
+    for(var p = 0; p < NUM_PIXELS; p++){
         ret[p] = color(img.pixels[0 + 4*p], img.pixels[1 + 4*p], img.pixels[2 + 4*p]);   
     }
     debug("Custom Color: R: " + red(ret[2]) + "G: " + green(ret[2])+ " B: "+ blue(ret[2]));
@@ -54,8 +58,8 @@ function calcColorDist(nexus, pixel){
 function relabelPixels(nexuses, img){
     //debug("relabeling pixels")
     //Each index will store on Color Object
-    var ret = new Array(img.width*img.height);
-    for(var p = 0; p < img.width*img.height; p++){
+    var ret = new Array(NUM_PIXELS);
+    for(var p = 0; p < NUM_PIXELS; p++){
         
         var curPixel = colors[p];  
         var bestNexus = 0;
@@ -82,7 +86,7 @@ function averageLabels(nexuses, img, labels){
         var r = 0;
         var g = 0;
         var b = 0;
-        for(var p = 0; p < img.width*img.height; p++){
+        for(var p = 0; p < NUM_PIXELS; p++){
             var curColor = colors[p];
             if(labels[p] == n){
                 count++;
@@ -97,45 +101,36 @@ function averageLabels(nexuses, img, labels){
     return ret;
 }
 
-function checkValidPixels(img){
-    debug("Checking Pixels")
-    for(var x = 0; x < img.width*img.height; x++){
-   	    debug("R "+ img.pixels[x] + " g: " + img.pixels[x+1] + " b: " + img.pixels[x+2] + " a: " + img.pixels[x+3]);
-    }
-    return true;
-}
-
 function kmeans(img){
     //debug("Begin KMEANS")
     var nexuses = createNexuses();
-    var ret = new p5.Image(img.width,img.height);
-    var labels = new Array(img.width*img.height);
+    var ret = new p5.Image(POLL_W,POLL_H);
+    var labels = new Array(NUM_PIXELS);
     img.loadPixels();
     ret.loadPixels();
     for(var i = 0; i < MAX_ITR; i++){
         //relabel pixels based on nexuses
-        labels = relabelPixels(nexuses, img);
+        labels = relabelPixels(nexuses, colors);
         //Remap nexuses 
-        nexuses = averageLabels(nexuses, img, labels);
+        nexuses = averageLabels(nexuses, colors, labels);
         console.log(i);
     }
     debug("Setting Pixels")    
-    for(var x = 0; x < img.width*img.height; x++){
-        var rx = x % img.width
-        var ry = optFloor(x/img.width) 
+    for(var x = 0; x < NUM_PIXELS; x++){
+        var rx = x % POLL_W
+        var ry = optFloor(x/POLL_W) 
         var curColor = nexuses[labels[x]]
         ret.set(rx,ry,curColor) 
     }
     debug("Updating Pixels");
     ret.updatePixels();
-    checkValidPixels(ret)
     debug(ret.get(0,30));
     
     return ret;
 }
 
 function setup() {
-    //canvas = createCanvas(img.width,img.height)
+    //canvas = createCanvas(POLL_W,POLL_H)
     canvas = createCanvas(640,480);
     img.resize(640,480);
     colors = createColorHash(img);    
